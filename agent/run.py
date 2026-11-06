@@ -374,8 +374,8 @@ def pcm_from_wav_or_raw(data, mime):
 
 def tts_chunk(text):
     resp = gemini(GEMINI_TTS_MODEL, {
-        "contents": [{"parts": [{"text": "Read this as a warm, calm, natural podcast producer briefing the host. "
-                                          "Moderate pace, clear diction:\n\n" + text}]}],
+        # Send only the script: any style instruction in the text gets read aloud by the TTS model.
+        "contents": [{"parts": [{"text": text}]}],
         "generationConfig": {
             "responseModalities": ["AUDIO"],
             "speechConfig": {"voiceConfig": {"prebuiltVoiceConfig": {"voiceName": TTS_VOICE}}},
@@ -404,15 +404,16 @@ def make_audio(script):
     silence = None
     for i, c in enumerate(chunks):
         log(f"  voicing part {i + 1}/{len(chunks)}")
-        for attempt in range(3):
+        for attempt in range(7):
             try:
                 data, rate, ch = tts_chunk(c)
                 break
             except Exception as e:
-                if attempt == 2:
+                if attempt == 6:
                     raise
-                log(f"  TTS retry ({e})")
-                time.sleep(5)
+                wait = min(10 * 2 ** attempt, 120)  # 10s, 20s, 40s, 80s, 120s, 120s
+                log(f"  TTS retry in {wait}s ({str(e)[:120]})")
+                time.sleep(wait)
         silence = silence or b"\x00\x00" * int(rate * 0.6) * ch
         pcm += data + silence
 
