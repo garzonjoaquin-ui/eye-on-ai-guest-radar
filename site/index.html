@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Guest Radar · Eye on AI</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top-inner">
+      <div class="brand">
+        <span class="dot"></span>
+        <div>
+          <div class="brand-title">Guest Radar</div>
+          <div class="brand-sub">for Eye on AI · by The Podmaker</div>
+        </div>
+      </div>
+      <label class="week-select">
+        <span>Week</span>
+        <select id="weekSelect" aria-label="Choose week"></select>
+      </label>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero" id="hero">
+      <p class="eyebrow" id="weekLabel"></p>
+      <h1 id="runTitle">Loading…</h1>
+      <p class="summary" id="runSummary"></p>
+
+      <div class="player" id="player">
+        <button class="play" id="playBtn" aria-label="Play weekly briefing">
+          <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path id="playIcon" d="M8 5v14l11-7z" fill="currentColor"/></svg>
+        </button>
+        <div class="player-body">
+          <div class="player-title">Weekly briefing</div>
+          <div class="player-sub" id="playerSub">Listen to this week's picks</div>
+          <input type="range" id="seek" min="0" max="100" value="0" aria-label="Seek">
+        </div>
+        <div class="speed">
+          <button id="speedBtn" aria-label="Playback speed">1×</button>
+        </div>
+        <audio id="audio" preload="none"></audio>
+      </div>
+    </section>
+
+    <nav class="filters" id="filters" aria-label="Filter by playlist"></nav>
+
+    <section class="grid" id="grid" aria-live="polite"></section>
+
+    <section class="shortlist" id="shortlistBox" hidden>
+      <h2>Your shortlist</h2>
+      <ul id="shortlist"></ul>
+    </section>
+  </main>
+
+  <footer class="wrap foot">
+    Your 👍 / 👎 teach the radar what you like — next week's picks adapt.
+  </footer>
+
+  <template id="cardTpl">
+    <article class="card">
+      <div class="media"></div>
+      <div class="card-body">
+        <div class="tag"></div>
+        <h3 class="name"></h3>
+        <div class="role"></div>
+        <div class="prev" hidden></div>
+        <h4>Why now</h4>
+        <p class="why"></p>
+        <h4>Interview angle</h4>
+        <p class="angle"></p>
+        <div class="sources"></div>
+        <div class="actions">
+          <button data-v="interested">👍 Interested</button>
+          <button data-v="no">👎 Not for me</button>
+          <button data-v="known">✓ Already know them</button>
+        </div>
+        <textarea class="note" placeholder="Optional note (e.g. 'ask about China', 'too commercial')" rows="2"></textarea>
+        <div class="saved" aria-live="polite"></div>
+      </div>
+    </article>
+  </template>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

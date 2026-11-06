@@ -1,0 +1,187 @@
+{
+  "run": {
+    "id": "pilot",
+    "week_of": "2026-11-02",
+    "title": "Pilot week — 9 guests worth a conversation",
+    "summary": "Serious, high-profile guests are your best performers: Ilya Sutskever (16k views) and Christof Koch (11.7k views, 17.7% average watched) far outperform typical sponsored episodes (500–1,000 views). This week's picks follow that direction across chips, consciousness, models, defense and AI for science.",
+    "audio_url": "data/pilot_briefing.mp3",
+    "audio_seconds": 138,
+    "briefing_script": "Hi Craig, this is your Guest Radar for the first week of November.\n\nA quick word on why these picks look the way they do. Your two biggest episodes this year were Ilya Sutskever and Christof Koch, with sixteen thousand and almost twelve thousand views. Koch also kept people watching longer than any other recent episode. So the radar leans toward serious, high-profile people who are in the news right now.\n\nOn chips, two names. Jim Keller at Tenstorrent just closed a one-and-a-half-billion-dollar round. He designed chips at Apple, AMD and Tesla, and he's betting that open hardware can loosen Nvidia's grip. And Gavin Uberti at Etched, now valued at over ten billion dollars, is building a chip just for the prefill step of inference. That would pick up nicely from your d-Matrix conversation.\n\nOn consciousness and the brain, three ideas. Michal Irani at the Weizmann Institute leads the lab behind Brain-IT, which reconstructs what a person is seeing from a brain scan with about an hour of data. Jonathan Birch at the London School of Economics just published a centrist manifesto on AI consciousness. He'd be a strong counterpoint to Koch. And Robert Long or Patrick Butlin can walk through their checklist for detecting consciousness in machines.\n\nOn models, Yann LeCun would be a return visit, but with a new reason. AMI Labs raised a billion dollars to build world models instead of language models. And Yang Zhilin at Moonshot just released Kimi K3, a giant open-weight model from China. Your China background makes that a conversation few hosts could have.\n\nOn defense, Mykhailo Fedorov has left government and started a company building autonomous interceptor drones, backed by Alex Karp. Lasar's Group has already tested it, so it connects directly to your Ukraine series.\n\nAnd on AI for science, the Google DeepMind Co-Scientist team published in Nature. Their system reproduced a ten-year antibiotic resistance finding in two days.\n\nThat's the week. Mark the ones you like in the hub, and next week's picks will follow your lead.\n"
+  },
+  "guests": [
+    {
+      "id": "p1",
+      "name": "Jim Keller",
+      "role": "CEO",
+      "org": "Tenstorrent",
+      "category": "Chips & Hardware",
+      "why_now": "Tenstorrent closed a $1.5B Series E on Oct 19 at a $6.2B valuation (ARK, Morgan Stanley, T. Rowe Price).",
+      "angle": "The architect behind Apple A4/A5, AMD Zen and Tesla's FSD chip on whether open RISC-V hardware can break Nvidia's grip.",
+      "previous_note": null,
+      "video_url": "https://www.youtube.com/watch?v=s3iD1rGA3Wo",
+      "sources": [
+        {
+          "title": "The AI Insider — Tenstorrent Series E",
+          "url": "https://theaiinsider.tech/2026/10/19/tenstorrent-announces-a-1-5b-series-e-at-a-6-2b-valuation/"
+        }
+      ],
+      "video_title": "FII Priority Miami 2025: Jim Keller - CEO, Tenstorrent"
+    },
+    {
+      "id": "p2",
+      "name": "Gavin Uberti",
+      "role": "CEO",
+      "org": "Etched",
+      "category": "Chips & Hardware",
+      "why_now": "Valued at $10.3B in July; betting on a dedicated prefill chip, split from decode.",
+      "angle": "Why inference is splitting into two different hardware problems. Builds on the d-Matrix episode.",
+      "previous_note": null,
+      "video_url": "https://www.youtube.com/watch?v=35BLqsRIP0I",
+      "sources": [
+        {
+          "title": "TechCrunch — Etched hits $10.3B valuation",
+          "url": "https://techcrunch.com/2026/07/23/ai-chip-startup-etched-defies-skeptics-hits-10-3b-valuation-from-big-name-investors/"
+        }
+      ],
+      "video_title": "The future of AI chips (with Etched's Gavin Uberti) | Pioneers of AI"
+    },
+    {
+      "id": "p3",
+      "name": "Prof. Michal Irani",
+      "role": "Professor of Computer Science",
+      "org": "Weizmann Institute of Science",
+      "category": "Consciousness & the Brain",
+      "why_now": "Her lab's Brain-IT system (ICLR 2026) reconstructs what a person sees from fMRI scans with ~1 hour of data instead of ~40.",
+      "angle": "Mind-reading AI: what it can actually do, hope for locked-in patients, and the mental-privacy debate. A natural follow-up to Koch.",
+      "previous_note": null,
+      "video_url": "https://www.youtube.com/watch?v=E_ge03TrGmA",
+      "sources": [
+        {
+          "title": "arXiv — Brain-IT",
+          "url": "https://arxiv.org/pdf/2510.25976"
+        },
+        {
+          "title": "SingularityHub coverage",
+          "url": "https://singularityhub.com/2026/10/12/this-ai-reconstructs-what-youre-looking-at-from-a-brain-scan/"
+        }
+      ],
+      "video_title": "“Reading Minds & Machines” keynote by Michal Irani at Machines Can See"
+    },
+    {
+      "id": "p4",
+      "name": "Prof. Jonathan Birch",
+      "role": "Professor of Philosophy",
+      "org": "London School of Economics",
+      "category": "Consciousness & the Brain",
+      "why_now": "His 'AI Consciousness: A Centrist Manifesto' (July 2026) argues millions will soon attribute consciousness to AI while the science can't settle it.",
+      "angle": "The counterpoint to Koch: the case for staying uncertain, and what that means for how society treats AI.",
+      "previous_note": null,
+      "video_url": "https://www.youtube.com/watch?v=42FpQcwsP6A",
+      "sources": [
+        {
+          "title": "Birch — A Centrist Manifesto (PhilPapers)",
+          "url": "https://philpapers.org/archive/BIRACA-4.pdf"
+        }
+      ],
+      "video_title": "The Edge of Sentience: a conversation with Jonathan Birch"
+    },
+    {
+      "id": "p5",
+      "name": "Robert Long or Patrick Butlin",
+      "role": "Researchers",
+      "org": "Eleos AI",
+      "category": "Consciousness & the Brain",
+      "why_now": "Co-authors of 'Identifying Indicators of Consciousness in AI Systems' (Trends in Cognitive Sciences) and new empirical work on AI welfare.",
+      "angle": "A practical checklist for detecting machine consciousness, and why labs are starting to take AI welfare seriously.",
+      "previous_note": null,
+      "video_url": "https://www.youtube.com/watch?v=mEMfw_CONJk",
+      "sources": [
+        {
+          "title": "ScienceDaily — indicators of consciousness",
+          "url": "https://sciencedaily.com/releases/2026/06/260604044258.htm"
+        }
+      ],
+      "video_title": "Should We Care About AI Welfare? (with Robert Long)"
+    },
+    {
+      "id": "p6",
+      "name": "Yann LeCun",
+      "role": "Executive Chairman",
+      "org": "AMI Labs",
+      "category": "Models & Algorithms",
+      "why_now": "Left Meta and raised a $1.03B seed for AMI Labs, Europe's largest ever, to build world models instead of LLMs.",
+      "angle": "One year in: what AMI has built and whether the bet against LLMs is paying off.",
+      "previous_note": "Return guest — on the show in 2019 (#17) and 2023 (#150).",
+      "video_url": "https://www.youtube.com/watch?v=7Yr62DCtIVs",
+      "sources": [
+        {
+          "title": "Wikipedia — AMI Labs",
+          "url": "https://en.wikipedia.org/wiki/Advanced_Machine_Intelligence_Labs"
+        },
+        {
+          "title": "Eye on AI #150",
+          "url": "https://www.eye-on.ai/podcast-150"
+        }
+      ],
+      "video_title": "AI at 70 Award Presentation & Keynote: World Models: Enabling the Next AI Revolution"
+    },
+    {
+      "id": "p7",
+      "name": "Yang Zhilin",
+      "role": "CEO",
+      "org": "Moonshot AI (Kimi)",
+      "category": "Models & Algorithms",
+      "why_now": "Kimi K3, a 2.8T-parameter open-weight model, was presented at GTC as a direct challenge to top US labs. $2B raised at a $20B valuation; Hong Kong IPO in preparation.",
+      "angle": "How a Chinese lab competes at the frontier with open weights — a conversation your China background makes unique.",
+      "previous_note": null,
+      "video_url": "https://www.youtube.com/watch?v=3tii8rEscCI",
+      "sources": [
+        {
+          "title": "TechCrunch — Moonshot raises $2B",
+          "url": "https://techcrunch.com/2026/05/07/chinas-moonshot-ai-raises-2b-at-20b-valuation-as-demand-for-open-source-ai-skyrockets"
+        }
+      ],
+      "video_title": "Kimi K3 Founder Reveals the Future of AI Agents, Open Source AI & AI Coworkers -"
+    },
+    {
+      "id": "p8",
+      "name": "Mykhailo Fedorov",
+      "role": "Founder (former Minister of Defence and of Digital Transformation)",
+      "org": "New defense-tech company",
+      "category": "Defense & Ukraine",
+      "why_now": "Launched in September with Alex Karp as lead investor. Its interceptor drone downed two Geran-5 jet drones in combat tests and was tested by Lasar's Group. Goal: full autonomy.",
+      "angle": "From running Ukraine's tech strategy to building autonomous air defense. Ties into the Lasar's, Brave1 and NORDA episodes.",
+      "previous_note": null,
+      "video_url": "https://www.youtube.com/watch?v=rCPYt1l3sfU",
+      "sources": [
+        {
+          "title": "Janes — interceptor UAV company",
+          "url": "https://www.janes.com/defence-intelligence-insights/defence-news/air/palantir-to-fund-ukrainian-interceptor-uav-company-targeting-russias-geran-5"
+        },
+        {
+          "title": "Euromaidan Press — launch",
+          "url": "https://euromaidanpress.com/2026/09/01/fedorov-launches-defense-tech-company/"
+        }
+      ],
+      "video_title": "Interview: Former Ukraine defense minister launches 'Army of Robots' initiative"
+    },
+    {
+      "id": "p9",
+      "name": "Google DeepMind Co-Scientist team",
+      "role": "e.g. Vivek Natarajan or first author J. Gottweis",
+      "org": "Google DeepMind",
+      "category": "AI for Science",
+      "why_now": "Published in Nature (2026). Reproduced an antimicrobial-resistance finding in 2 days that originally took ~10 years.",
+      "angle": "Can AI agents actually do science? What has been proven in the lab, and what hasn't.",
+      "previous_note": null,
+      "video_url": "https://www.youtube.com/watch?v=sIMdj8sE-OI",
+      "sources": [
+        {
+          "title": "Google Research — I/O 2026",
+          "url": "https://research.google/blog/a-new-era-of-innovation-google-research-at-io-2026"
+        }
+      ],
+      "video_title": "Vivek Natarajan (Research Lead AI for Science at Google DeepMind) - RAAIS 2026"
+    }
+  ]
+}

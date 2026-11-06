@@ -1,0 +1,41 @@
+name: Weekly Guest Radar
+
+on:
+  schedule:
+    - cron: "0 11 * * 1"   # Mondays 11:00 UTC (08:00 Buenos Aires)
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Replace this week's radar if it already exists"
+        type: boolean
+        default: false
+
+concurrency:
+  group: weekly-radar
+  cancel-in-progress: false
+
+jobs:
+  radar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r agent/requirements.txt
+      - name: Run the agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python agent/run.py ${{ inputs.force && '--force' || '' }}
+      - name: Keep the research notes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: radar-${{ github.run_id }}
+          path: out/
+          if-no-files-found: ignore
+          retention-days: 60
