@@ -9,6 +9,10 @@ on:
         description: "Replace this week's radar if it already exists"
         type: boolean
         default: false
+      test:
+        description: "Test run: save under week 2000-01-03, hidden from the hub"
+        type: boolean
+        default: false
 
 concurrency:
   group: weekly-radar
@@ -30,7 +34,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        run: python agent/run.py ${{ inputs.force && '--force' || '' }}
+        run: python agent/run.py ${{ inputs.force && '--force' || '' }} ${{ inputs.test && '--week 2000-01-03 --hidden --force' || '' }}
       - name: Keep the research notes
         if: always()
         uses: actions/upload-artifact@v4

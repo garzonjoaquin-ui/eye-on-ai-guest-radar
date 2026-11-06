@@ -429,7 +429,7 @@ def make_audio(script):
 
 # ---------------------------------------------------------------- publish
 
-def publish(sb, week, result, audio_url, seconds, model, force):
+def publish(sb, week, result, audio_url, seconds, model, force, published=True):
     existing = sb.select("runs", f"select=id&week_of=eq.{week}")
     if existing:
         rid = existing[0]["id"]
@@ -443,7 +443,7 @@ def publish(sb, week, result, audio_url, seconds, model, force):
     run = sb.insert("runs", [{
         "week_of": week, "title": result["title"], "summary": result["summary"],
         "briefing_script": result["briefing_script"], "audio_url": audio_url,
-        "audio_seconds": seconds, "model": model, "published": True,
+        "audio_seconds": seconds, "model": model, "published": published,
     }])[0]
     rows = []
     for i, g in enumerate(result["guests"]):
@@ -460,10 +460,12 @@ def main():
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--no-audio", action="store_true")
     ap.add_argument("--engine", choices=["auto", "claude", "gemini"], default="auto")
+    ap.add_argument("--week", help="Monday to file the run under (YYYY-MM-DD); default: this week")
+    ap.add_argument("--hidden", action="store_true", help="save the run unpublished (test runs Craig won't see)")
     args = ap.parse_args()
 
     load_env()
-    week = week_monday().isoformat()
+    week = args.week or week_monday().isoformat()
     sb = None if args.dry_run else Supabase()
     mem = gather_memory(sb)
     log(f"Week {week}: {len(mem['past_guests'])} past guests, {len(mem['already_suggested'])} earlier suggestions, "
@@ -521,7 +523,7 @@ def main():
             log(f"Audio failed, publishing without it: {e}")
 
     if sb:
-        rid = publish(sb, week, result, audio_url, seconds, model, args.force)
+        rid = publish(sb, week, result, audio_url, seconds, model, args.force, published=not args.hidden)
         log(f"Published run {rid} for week {week}")
     else:
         log(f"Dry run saved to {out_dir}")
