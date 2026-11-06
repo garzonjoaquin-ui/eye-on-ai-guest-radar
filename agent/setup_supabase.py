@@ -24,6 +24,10 @@ def mgmt(method, path, body=None):
 
 
 def ensure_project():
+    ref = os.environ.get("SUPABASE_PROJECT_REF")
+    if ref:  # reuse an existing project instead of creating "guest-radar"
+        print(f"Using project {ref}")
+        return ref
     for p in mgmt("GET", "/projects"):
         if p["name"] == PROJECT_NAME:
             print(f"Project exists: {p['id']} ({p['status']})")
