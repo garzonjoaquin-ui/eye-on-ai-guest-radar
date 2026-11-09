@@ -2,7 +2,8 @@ name: Weekly Guest Radar
 
 on:
   schedule:
-    - cron: "0 11 * * 1"   # Mondays 11:00 UTC (08:00 Buenos Aires)
+    - cron: "17 11 * * 1"  # Mondays 08:17 Buenos Aires
+    - cron: "17 15 * * 1"  # backup: does nothing if the morning run already published
   workflow_dispatch:
     inputs:
       force:

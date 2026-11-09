@@ -25,7 +25,10 @@ import wave
 
 from common import ROOT, Supabase, http, load_env
 
-CLAUDE_MODEL = os.environ.get("RADAR_CLAUDE_MODEL", "claude-opus-5-5")
+CLAUDE_MODEL = os.environ.get("RADAR_CLAUDE_MODEL", "claude-opus-5-5")  # final selection and script
+RESEARCH_MODEL = os.environ.get("RADAR_RESEARCH_MODEL", "claude-sonnet-5-5")  # searching and reading
+SEARCHES_PER_BATCH = int(os.environ.get("RADAR_SEARCHES_PER_BATCH", "5"))
+FETCHES_PER_BATCH = int(os.environ.get("RADAR_FETCHES_PER_BATCH", "1"))
 GEMINI_TEXT_MODEL = os.environ.get("RADAR_GEMINI_MODEL", "gemini-3.8-flash")
 GEMINI_TTS_MODEL = os.environ.get("RADAR_TTS_MODEL", "gemini-3.8-flash-tts")
 TTS_VOICE = os.environ.get("RADAR_TTS_VOICE", "Charon")
@@ -39,6 +42,22 @@ CATEGORIES = [
     "AI Policy & Society",
     "Robotics & Physical AI",
 ]
+
+# Each batch is its own short conversation, so search results are not re-read across topics.
+TOPIC_BATCHES = [
+    ["Chips & Hardware", "Robotics & Physical AI"],
+    ["Models & Algorithms"],
+    ["Consciousness & the Brain", "AI for Science"],
+    ["Defense & Ukraine", "AI Policy & Society"],
+]
+
+# USD per million tokens / per search (platform.claude.com/docs/en/about-claude/pricing, Nov 2026).
+PRICES = {
+    "claude-opus-5-5": {"input": 4, "cache_write": 5, "cache_read": 0.20, "output": 20},
+    "claude-sonnet-5-5": {"input": 2, "cache_write": 2.5, "cache_read": 0.10, "output": 10},
+}
+USD_PER_SEARCH = 0.01
+USAGE = {}
 
 SHOW_BRIEF = """\
 Eye on AI is a long-form interview podcast hosted by Craig S. Smith, a former New York Times
@@ -177,43 +196,146 @@ status, the YouTube URL and its title, and 1-3 source URLs. Then add a 3-sentenc
 Do not invent facts, URLs or numbers: if a detail is uncertain, say so or leave it out."""
 
 
-def claude_research(mem, week):
+def batch_prompt(mem, week, topics):
+    return f"""Today is {dt.date.today().isoformat()}. You are the guest scout for the Eye on AI podcast. Week of {week}.
+
+{SHOW_BRIEF}
+
+{memory_text(mem)}
+
+This run covers only these topics: {", ".join(topics)}. Other topics are handled separately.
+
+1. Search for what actually happened in these topics over roughly the last 10 days: papers, launches,
+   funding, policy moves, scientific results, public debates. You have very few searches, so make each
+   one count. Prefer primary or reputable sources (company announcements, arXiv/journals, Reuters, FT,
+   TechCrunch, The Verge, Nature, Science, NPR, Janes) over aggregator blogs.
+2. Pick the 2-3 best interview candidates. Each must be a specific named person (not just a company),
+   tied to something that happened recently, and able to carry a serious long-form conversation.
+3. Learn from Craig's reactions above: more of what he liked, less of what he rejected.
+4. Do not search for videos or for past Eye on AI appearances: separate steps handle both.
+
+Write plain research notes, one section per candidate. Start each section with a line that says exactly
+CANDIDATE: <full name>
+then: role, organization, category (one of the topics above), why now (with dates and numbers), a sharp
+interview angle tailored to Craig, and 1-3 source URLs. End with two sentences on the state of these topics.
+Do not invent facts, URLs or numbers: if a detail is uncertain, say so or leave it out."""
+
+
+def track_usage(model, usage):
+    u = USAGE.setdefault(model, {"input": 0, "cache_write": 0, "cache_read": 0, "output": 0, "searches": 0})
+    u["input"] += usage.input_tokens or 0
+    u["cache_write"] += getattr(usage, "cache_creation_input_tokens", 0) or 0
+    u["cache_read"] += getattr(usage, "cache_read_input_tokens", 0) or 0
+    u["output"] += usage.output_tokens or 0
+    server = getattr(usage, "server_tool_use", None)
+    u["searches"] += (getattr(server, "web_search_requests", 0) or 0) if server else 0
+
+
+def usage_report():
+    """Measured tokens and estimated USD for this run."""
+    total = 0.0
+    for model, u in USAGE.items():
+        p = PRICES.get(model)
+        if p:
+            total += sum(u[k] * p[k] for k in ("input", "cache_write", "cache_read", "output")) / 1_000_000
+        total += u["searches"] * USD_PER_SEARCH
+    return {"models": USAGE, "estimated_usd": round(total, 2)}
+
+
+def claude_search(prompt, tools, label, max_tokens=8000, effort="low", thinking=False):
+    """One short web-search conversation on the research model, with prompt caching. Returns its text."""
     import anthropic
 
     client = anthropic.Anthropic(timeout=900, max_retries=3)
-    messages = [{"role": "user", "content": research_prompt(mem, week)}]
-    tools = [
-        {"type": "web_search_20260209", "name": "web_search", "max_uses": 40},
-        {"type": "web_fetch_20260209", "name": "web_fetch", "max_uses": 10},
-    ]
+    messages = [{"role": "user", "content": prompt}]
+    extra = {"thinking": {"type": "adaptive"}} if thinking else {}
     resp = None
-    for i in range(8):
-        log(f"Claude research turn {i + 1}…")
-        resp = client.beta.messages.create(
-            model=CLAUDE_MODEL,
-            max_tokens=32000,
-            betas=["server-side-fallback-2026-07-01"],
-            fallbacks="default",
-            thinking={"type": "adaptive"},
-            output_config={"effort": "high"},
-            tools=tools,
-            messages=messages,
+    for i in range(5):
+        log(f"  {label}: turn {i + 1}")
+        resp = client.messages.create(
+            model=RESEARCH_MODEL, max_tokens=max_tokens, cache_control={"type": "ephemeral"},
+            output_config={"effort": effort}, tools=tools, messages=messages, **extra,
         )
+        track_usage(RESEARCH_MODEL, resp.usage)
         if resp.stop_reason != "pause_turn":
             break
         messages = [messages[0], {"role": "assistant", "content": resp.content}]
     if resp.stop_reason == "refusal":
-        raise RuntimeError("Claude declined the research request")
-    notes = "\n".join(b.text for b in resp.content if b.type == "text").strip()
-    if not notes:
-        raise RuntimeError(f"Empty research (stop_reason={resp.stop_reason})")
-    return notes
+        raise RuntimeError(f"{label}: Claude declined the request")
+    return "\n".join(b.text for b in resp.content if b.type == "text").strip()
+
+
+def parse_pairs(text):
+    """Read lines like 'NAME || value' into {name (lowercase): value}, skipping 'none'."""
+    out = {}
+    for line in text.splitlines():
+        if "||" in line:
+            name, value = (x.strip(" -*") for x in line.split("||", 1))
+            if name and value and value.lower() != "none":
+                out[name.lower()] = value
+    return out
+
+
+def claude_check_past(names):
+    """Look up candidates on eye-on.ai. The seed list of past guests is incomplete. Returns a notes section."""
+    people = "\n".join(f"- {n}" for n in names)
+    text = claude_search(
+        f"""For each person below, search eye-on.ai to see if they have been a guest on the Eye on AI podcast.
+
+{people}
+
+Answer with one line per person, exactly in this format and nothing else:
+NAME || episode and year if they were a guest
+Use "NAME || none" if you found no episode with that person as the guest.""",
+        [{"type": "web_search_20260209", "name": "web_search", "max_uses": len(names),
+          "allowed_domains": ["eye-on.ai"]}],
+        "past-guest check", max_tokens=3000,
+    )
+    found = parse_pairs(text)
+    if not found:
+        return "ALREADY ON EYE ON AI: none of these candidates were found on eye-on.ai."
+    lines = "\n".join(f"- {n}: {detail}" for n, detail in found.items())
+    return f"ALREADY ON EYE ON AI (drop them unless there is a clear new reason, and fill previous_note):\n{lines}"
+
+
+def claude_research(mem, week):
+    tools = [
+        {"type": "web_search_20260209", "name": "web_search", "max_uses": SEARCHES_PER_BATCH},
+        {"type": "web_fetch_20260209", "name": "web_fetch", "max_uses": FETCHES_PER_BATCH,
+         "max_content_tokens": 8000},
+    ]
+    sections, errors = [], []
+    for topics in TOPIC_BATCHES:
+        label = " + ".join(topics)
+        log(f"Researching {label}…")
+        try:
+            notes = claude_search(batch_prompt(mem, week, topics), tools, label,
+                                  max_tokens=6000, effort="medium", thinking=True)
+            if notes:
+                sections.append(f"## {label}\n\n{notes}")
+        except Exception as e:
+            errors.append(e)
+            log(f"  {label} failed: {e}")
+    if not sections:
+        raise RuntimeError(f"All research batches failed: {errors[0] if errors else 'empty notes'}")
+
+    names = []
+    for sec in sections:
+        names += [m.strip(" *#") for m in re.findall(r"CANDIDATE:\s*(.+)", sec)]
+    if names:
+        try:
+            log(f"Checking {len(names)} candidates against past episodes…")
+            sections.append(claude_check_past(names))
+        except Exception as e:
+            log(f"Past-guest check failed, continuing without it: {e}")
+    return "\n\n".join(sections)
 
 
 def structure_prompt(notes, week):
     return f"""Below are this week's research notes for the Eye on AI guest radar (week of {week}).
 Turn them into the structured format. Rules:
 - Keep only candidates that are specific named people with a sourced, recent reason. 6-8 guests, best first.
+  The notes come from separate topic searches: compare across all of them and spread picks over at least four topics.
 - why_now: 1-2 sentences, concrete (dates, numbers). angle: 1-2 sentences written for Craig.
 - previous_note: null unless they were on Eye on AI before; then e.g. "Return guest — on the show in 2023 (#150)".
 - video_url: only a YouTube URL that appears in the notes; otherwise null. video_title likewise.
@@ -240,6 +362,7 @@ def claude_structure(notes, week):
         output_config={"effort": "medium", "format": {"type": "json_schema", "schema": GUEST_SCHEMA}},
         messages=[{"role": "user", "content": structure_prompt(notes, week)}],
     )
+    track_usage(CLAUDE_MODEL, resp.usage)
     if resp.stop_reason == "refusal":
         raise RuntimeError("Claude declined the structuring request")
     text = next(b.text for b in resp.content if b.type == "text")
@@ -306,8 +429,6 @@ def check_video(url):
 
 def claude_find_videos(guests):
     """Second, cheap pass: one YouTube video per guest that still lacks one. Returns {name: url}."""
-    import anthropic
-
     todo = [g for g in guests if not g.get("video_url")]
     if not todo:
         return {}
@@ -321,28 +442,10 @@ Only use URLs you actually saw in search results; never construct or guess a vid
 Answer with one line per person, exactly in this format and nothing else:
 NAME || https://www.youtube.com/watch?v=XXXXXXXXXXX
 Use "NAME || none" if you found nothing that clearly shows that person."""
-    client = anthropic.Anthropic(timeout=600, max_retries=3)
-    messages = [{"role": "user", "content": prompt}]
     tools = [{"type": "web_search_20260209", "name": "web_search",
-              "max_uses": 3 * len(todo), "allowed_domains": ["youtube.com"]}]
-    resp = None
-    for _ in range(5):
-        resp = client.beta.messages.create(
-            model=CLAUDE_MODEL, max_tokens=8000,
-            betas=["server-side-fallback-2026-07-01"], fallbacks="default",
-            output_config={"effort": "low"}, tools=tools, messages=messages,
-        )
-        if resp.stop_reason != "pause_turn":
-            break
-        messages = [messages[0], {"role": "assistant", "content": resp.content}]
-    text = "\n".join(b.text for b in resp.content if b.type == "text")
-    found = {}
-    for line in text.splitlines():
-        if "||" in line:
-            name, url = (x.strip(" -*") for x in line.split("||", 1))
-            if url.startswith("http"):
-                found[name.lower()] = url
-    return found
+              "max_uses": 2 * len(todo), "allowed_domains": ["youtube.com"]}]
+    found = parse_pairs(claude_search(prompt, tools, "video search"))
+    return {name: url for name, url in found.items() if url.startswith("http")}
 
 
 def clean(result, mem):
@@ -467,6 +570,9 @@ def main():
     load_env()
     week = args.week or week_monday().isoformat()
     sb = None if args.dry_run else Supabase()
+    if sb and not args.force and sb.select("runs", f"select=id&week_of=eq.{week}"):
+        log(f"Week {week} is already published; nothing to do.")  # before any paid call
+        return
     mem = gather_memory(sb)
     log(f"Week {week}: {len(mem['past_guests'])} past guests, {len(mem['already_suggested'])} earlier suggestions, "
         f"{len(mem['liked'])} liked / {len(mem['disliked'])} rejected")
@@ -521,6 +627,10 @@ def main():
                 audio_url = sb.upload("briefings", f"{week}-{int(time.time())}.mp3", mp3, "audio/mpeg")
         except Exception as e:
             log(f"Audio failed, publishing without it: {e}")
+
+    report = usage_report()
+    (out_dir / f"{week}-cost.json").write_text(json.dumps(report, indent=2))
+    log(f"Usage: {json.dumps(report)}")
 
     if sb:
         rid = publish(sb, week, result, audio_url, seconds, model, args.force, published=not args.hidden)

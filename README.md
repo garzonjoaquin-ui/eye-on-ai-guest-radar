@@ -11,8 +11,8 @@ Lunes 08:00 (Buenos Aires)
   GitHub Actions  ──►  agent/run.py
                          1. Lee la memoria en Supabase: invitados que ya fueron, sugerencias anteriores,
                             los 👍/👎 y notas de Craig
-                         2. Claude (claude-opus-5-5) + búsqueda web: noticias de los últimos ~10 días
-                            → 6 a 8 candidatos, cada uno con fuentes y un video de YouTube
+                         2. Claude Sonnet + búsqueda web, en 4 tandas cortas por tema (noticias de ~10 días)
+                            y Claude Opus elige 6 a 8 candidatos, cada uno con fuentes y un video de YouTube
                          3. Chequea que cada video exista y descarta los nombres repetidos
                          4. Gemini TTS genera el briefing en audio (mp3, unos 3-4 min)
                          5. Guarda la semana en Supabase
@@ -41,7 +41,7 @@ Al terminar, el script imprime la URL del hub (también queda guardada en `.env`
 
 ## Uso semanal
 
-- **No hay que hacer nada.** El lunes a las 08:00 aparece la semana nueva en el hub.
+- **No hay que hacer nada.** El lunes a la mañana aparece la semana nueva en el hub.
 - Mandale a Craig por WhatsApp algo así:
   > 🎧 Your weekly Guest Radar is ready (4 min): <link>
   > Mark the ones you like, and next week's picks will follow your lead.
@@ -62,13 +62,15 @@ en la tabla `past_guests` de Supabase. El agente además busca en eye-on.ai ante
 
 ## Costos estimados
 
-- Claude: alrededor de USD 1-3 por corrida (investigación con búsqueda web y armado de las tarjetas). Unos USD 5-12 por mes.
+- Claude: alrededor de USD 1 por corrida (estimación, falta medirla). El costo medido de cada corrida queda en los logs y en `out/<semana>-cost.json`.
+- Referencia: con Opus para todo y sin caché, las pruebas del 6/11 costaron USD 10,55 en total.
 - Gemini TTS, Supabase, GitHub Actions y Pages: entran en el plan gratis.
 
 ## Ajustes rápidos
 
 - **Día y hora:** el `cron` en `.github/workflows/weekly-radar.yml` (está en UTC).
-- **Modelo o voz:** las variables `RADAR_CLAUDE_MODEL`, `RADAR_TTS_VOICE` y `RADAR_TTS_MODEL` (ver `agent/run.py`).
+- **Modelo o voz:** las variables `RADAR_CLAUDE_MODEL`, `RADAR_RESEARCH_MODEL`, `RADAR_TTS_VOICE` y `RADAR_TTS_MODEL` (ver `agent/run.py`).
+- **Cuánto busca:** `RADAR_SEARCHES_PER_BATCH` (por defecto 5 por tanda) y `TOPIC_BATCHES` en `agent/run.py`.
 - **Qué le interesa a Craig:** el texto `SHOW_BRIEF` y la lista `CATEGORIES` en `agent/run.py`.
 
 ## Si algo falla
