@@ -341,11 +341,12 @@ Turn them into the structured format. Rules:
 - video_url: only a YouTube URL that appears in the notes; otherwise null. video_title likewise.
 - sources: only URLs that appear in the notes.
 - title: a short headline for the week (max 10 words). summary: 2-3 sentences on the week in AI and the picks.
-- briefing_script: a 3-4 minute audio briefing (about 450-550 words) that a text-to-speech voice reads to Craig.
+- briefing_script: a short audio briefing, at most 2 minutes 20 seconds when spoken: 220-300 words, never more.
+  A text-to-speech voice reads it to Craig.
   Write it the way a producer actually talks to a colleague, not the way an article reads: start "Hey Craig.",
   short sentences, contractions (it's, he's, I'd), plain words, a few spoken connectors ("So...", "Here's the
   interesting part:", "Heads up,", "Oh, and"), and questions phrased as "I'd ask him: ...". Open with the week's
-  big picture, then one short paragraph per guest (who, why now, the angle), close with
+  big picture in 2-3 sentences, then 1-2 sentences per guest (who, the news hook, one question), close with
   "That's it. Mark the ones you like in the hub." No URLs, no markdown, no bullet symbols, no parentheses,
   numbers written the way they are spoken. Spell hard names phonetically if needed (Ljubisa Bajic -> Ljubisha Bajich).
 

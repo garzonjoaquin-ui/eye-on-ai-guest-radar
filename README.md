@@ -14,7 +14,7 @@ Lunes 08:00 (Buenos Aires)
                          2. Claude Sonnet + búsqueda web, en 4 tandas cortas por tema (noticias de ~10 días)
                             y Claude Opus elige 6 a 8 candidatos, cada uno con fuentes y un video de YouTube
                          3. Chequea que cada video exista y descarta los nombres repetidos
-                         4. Gemini TTS genera el briefing en audio (mp3, unos 3-4 min)
+                         4. Gemini TTS genera el briefing en audio (mp3, máximo 2:20)
                          5. Guarda la semana en Supabase
   Hub (GitHub Pages) ◄── lee Supabase en vivo. No hace falta volver a publicar la web.
 ```
@@ -43,7 +43,7 @@ Al terminar, el script imprime la URL del hub (también queda guardada en `.env`
 
 - **No hay que hacer nada.** El lunes a la mañana aparece la semana nueva en el hub.
 - Mandale a Craig por WhatsApp algo así:
-  > 🎧 Your weekly Guest Radar is ready (4 min): <link>
+  > 🎧 Your weekly Guest Radar is ready (2 min): <link>
   > Mark the ones you like, and next week's picks will follow your lead.
 - Para correrlo a mano: en GitHub, pestaña **Actions** → *Weekly Guest Radar* → **Run workflow**.
   Si la semana ya existe, tildá *force* para reemplazarla. Ojo: reemplazarla borra los 👍/👎 de esa semana.
