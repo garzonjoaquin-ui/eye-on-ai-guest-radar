@@ -31,7 +31,7 @@ SEARCHES_PER_BATCH = int(os.environ.get("RADAR_SEARCHES_PER_BATCH", "5"))
 FETCHES_PER_BATCH = int(os.environ.get("RADAR_FETCHES_PER_BATCH", "1"))
 GEMINI_TEXT_MODEL = os.environ.get("RADAR_GEMINI_MODEL", "gemini-3.8-flash")
 GEMINI_TTS_MODEL = os.environ.get("RADAR_TTS_MODEL", "gemini-3.8-flash-tts")
-TTS_VOICE = os.environ.get("RADAR_TTS_VOICE", "Charon")
+TTS_VOICE = os.environ.get("RADAR_TTS_VOICE", "Zubenelgenubi")
 
 CATEGORIES = [
     "Chips & Hardware",
@@ -341,10 +341,13 @@ Turn them into the structured format. Rules:
 - video_url: only a YouTube URL that appears in the notes; otherwise null. video_title likewise.
 - sources: only URLs that appear in the notes.
 - title: a short headline for the week (max 10 words). summary: 2-3 sentences on the week in AI and the picks.
-- briefing_script: a spoken 3-4 minute audio briefing (about 450-550 words) addressed to Craig, warm and
-  concise, like a smart producer talking to the host: open with the week's big picture, then one short
-  paragraph per guest (who, why now, the angle), close with "Mark the ones you like in the hub."
-  No URLs, no markdown, no bullet symbols, numbers written the way they are spoken.
+- briefing_script: a 3-4 minute audio briefing (about 450-550 words) that a text-to-speech voice reads to Craig.
+  Write it the way a producer actually talks to a colleague, not the way an article reads: start "Hey Craig.",
+  short sentences, contractions (it's, he's, I'd), plain words, a few spoken connectors ("So...", "Here's the
+  interesting part:", "Heads up,", "Oh, and"), and questions phrased as "I'd ask him: ...". Open with the week's
+  big picture, then one short paragraph per guest (who, why now, the angle), close with
+  "That's it. Mark the ones you like in the hub." No URLs, no markdown, no bullet symbols, no parentheses,
+  numbers written the way they are spoken. Spell hard names phonetically if needed (Ljubisa Bajic -> Ljubisha Bajich).
 
 RESEARCH NOTES:
 {notes}"""
