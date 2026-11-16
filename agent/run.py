@@ -124,16 +124,17 @@ def week_monday(today=None):
 
 # ---------------------------------------------------------------- memory
 
-def gather_memory(sb):
+def gather_memory(sb, week=None):
     """What the agent must know before searching: who is taken, what Craig liked and disliked."""
     if sb is None:
         pilot = json.loads((ROOT / "site" / "data" / "pilot.json").read_text())
         return {"past_guests": ["Yann LeCun (Eye on AI #17, #150)"],
                 "already_suggested": [g["name"] for g in pilot["guests"]],
-                "liked": [], "disliked": [], "known": []}
+                "liked": [], "disliked": [], "known": [], "carryover": []}
     past = [f"{r['name']}" + (f" ({r['detail']})" if r.get("detail") else "")
             for r in sb.select("past_guests", "select=name,detail&order=name")]
-    guests = sb.select("guests", "select=id,name,org,category,angle,created_at&order=created_at.desc&limit=400")
+    guests = sb.select("guests", "select=id,name,role,org,category,why_now,angle,video_url,video_title,sources,"
+                                 "created_at,runs(week_of)&order=created_at.desc&limit=400")
     by_id = {g["id"]: g for g in guests}
     fb = sb.select("feedback", "select=guest_id,verdict,note,created_at&order=created_at.asc")
     latest = {}
@@ -146,11 +147,36 @@ def gather_memory(sb):
             continue
         line = f"{g['name']} ({g['org']}, {g['category']})" + (f" — Craig's note: {f['note']}" if f.get("note") else "")
         {"interested": liked, "no": disliked, "known": known}[f["verdict"]].append(line)
+    # Earlier picks Craig has not turned down or marked as known, newest first, one entry per name.
+    carryover, seen = [], set()
+    for g in guests:
+        wk = (g.get("runs") or {}).get("week_of")
+        verdict = (latest.get(g["id"]) or {}).get("verdict")
+        if wk == week or verdict in ("no", "known") or g["name"].lower() in seen:
+            continue
+        seen.add(g["name"].lower())
+        carryover.append({**g, "week_of": wk, "liked": verdict == "interested"})
     return {
         "past_guests": past,
-        "already_suggested": sorted({g["name"] for g in guests}),
+        "already_suggested": sorted({g["name"] for g in guests if (g.get("runs") or {}).get("week_of") != week}),
         "liked": liked, "disliked": disliked, "known": known,
+        "carryover": carryover[:12],
     }
+
+
+def carryover_text(mem):
+    """Notes section with earlier picks the final step may reuse when this week's list is short."""
+    if not mem.get("carryover"):
+        return ""
+    rows = []
+    for g in mem["carryover"]:
+        src = " ".join(s.get("url", "") for s in (g.get("sources") or []))
+        rows.append(f"- {g['name']} | {g.get('role')}, {g.get('org')} | {g.get('category')} | week of {g['week_of']}"
+                    f"{' | Craig marked INTERESTED' if g['liked'] else ''}\n  why then: {g.get('why_now')}\n"
+                    f"  angle: {g.get('angle')}\n  video: {g.get('video_url') or 'none'} ({g.get('video_title') or ''})\n"
+                    f"  sources: {src or 'none'}")
+    return ("\n\n## EARLIER PICKS (not rejected by Craig; reuse only to fill the list, prefer ones he liked)\n\n"
+            + "\n".join(rows))
 
 
 def memory_text(mem):
@@ -209,9 +235,11 @@ This run covers only these topics: {", ".join(topics)}. Other topics are handled
    funding, policy moves, scientific results, public debates. You have very few searches, so make each
    one count. Prefer primary or reputable sources (company announcements, arXiv/journals, Reuters, FT,
    TechCrunch, The Verge, Nature, Science, NPR, Janes) over aggregator blogs.
-2. Pick the 2-3 best interview candidates. Hard rule: each one needs a news hook from the last 10 days that
-   names them or their work directly (a launch, paper, deal, ruling, statement), with its date and a source.
-   "The topic is in the news" or an old book is not a hook. If a topic has no such person, return fewer.
+2. Pick the 2-3 best interview candidates. Each needs a news hook from the last 10 days, with its date and a
+   source, that involves them, their company or lab, or their own work (a launch, paper, deal, ruling,
+   statement). For a company or lab story, name the specific person behind it (founder, CEO, lead researcher).
+   "The topic is in the news" or an old book is not a hook. Always return at least one candidate: if nobody
+   fits perfectly, give the person most directly tied to the biggest story in these topics this week.
    Each must be a specific named person (not just a company),
    tied to something that happened recently, and able to carry a serious long-form conversation.
 3. Learn from Craig's reactions above: more of what he liked, less of what he rejected.
@@ -338,7 +366,11 @@ def structure_prompt(notes, week):
     return f"""Below are this week's research notes for the Eye on AI guest radar (week of {week}).
 Turn them into the structured format. Rules:
 - Keep only candidates that are specific named people with a dated news hook from the last 10 days that involves
-  them or their work directly; drop anyone whose hook is only "the topic is in the news". Up to 8 guests, best first.
+  them, their company or lab, or their own work; drop anyone whose hook is only "the topic is in the news".
+  Aim for 6-8 guests, best first. If fewer than 6 fresh candidates qualify, fill up to 6 with people from the
+  EARLIER PICKS section (if any): copy their role, org, category, video and sources from there, set
+  previous_note to "Suggested before (week of <date>)", and refresh why_now if the notes have newer news on them.
+  In the briefing script, mention earlier picks briefly as still worth a look.
 - Leave out anything the notes mark as unverified, unconfirmed or rumored. Never write "unverified" or hedges
   about sources in any field: if a fact is not solid, omit it.
 - Never mention how the research was done anywhere (searches, sources, verification, targets, how many names
@@ -462,7 +494,8 @@ Use "NAME || none" if you found nothing that clearly shows that person."""
 
 
 def clean(result, mem):
-    taken = {n.lower() for n in mem["already_suggested"]}
+    reusable = {g["name"].lower() for g in mem.get("carryover", [])}
+    taken = {n.lower() for n in mem["already_suggested"]} - reusable
     out = []
     for g in result["guests"]:
         if g["name"].lower() in taken:
@@ -586,7 +619,7 @@ def main():
     if sb and not args.force and sb.select("runs", f"select=id&week_of=eq.{week}"):
         log(f"Week {week} is already published; nothing to do.")  # before any paid call
         return
-    mem = gather_memory(sb)
+    mem = gather_memory(sb, week)
     log(f"Week {week}: {len(mem['past_guests'])} past guests, {len(mem['already_suggested'])} earlier suggestions, "
         f"{len(mem['liked'])} liked / {len(mem['disliked'])} rejected")
 
@@ -597,16 +630,16 @@ def main():
     try:
         if engine == "claude":
             notes = claude_research(mem, week)
-            result = claude_structure(notes, week)
+            result = claude_structure(notes + carryover_text(mem), week)
         else:
             notes = gemini_research(mem, week)
-            result = gemini_structure(notes, week)
+            result = gemini_structure(notes + carryover_text(mem), week)
     except Exception as e:
         if engine == "claude" and os.environ.get("GEMINI_API_KEY"):
             log(f"Claude failed ({e}); falling back to Gemini")
             model = GEMINI_TEXT_MODEL
             notes = gemini_research(mem, week)
-            result = gemini_structure(notes, week)
+            result = gemini_structure(notes + carryover_text(mem), week)
         else:
             raise
 
