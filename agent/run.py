@@ -27,7 +27,7 @@ from common import ROOT, Supabase, http, load_env
 
 CLAUDE_MODEL = os.environ.get("RADAR_CLAUDE_MODEL", "claude-opus-5-5")  # final selection and script
 RESEARCH_MODEL = os.environ.get("RADAR_RESEARCH_MODEL", "claude-sonnet-5-5")  # searching and reading
-SEARCHES_PER_BATCH = int(os.environ.get("RADAR_SEARCHES_PER_BATCH", "5"))
+SEARCHES_PER_BATCH = int(os.environ.get("RADAR_SEARCHES_PER_BATCH", "8"))
 FETCHES_PER_BATCH = int(os.environ.get("RADAR_FETCHES_PER_BATCH", "1"))
 GEMINI_TEXT_MODEL = os.environ.get("RADAR_GEMINI_MODEL", "gemini-3.8-flash")
 GEMINI_TTS_MODEL = os.environ.get("RADAR_TTS_MODEL", "gemini-3.8-flash-tts")
@@ -209,7 +209,10 @@ This run covers only these topics: {", ".join(topics)}. Other topics are handled
    funding, policy moves, scientific results, public debates. You have very few searches, so make each
    one count. Prefer primary or reputable sources (company announcements, arXiv/journals, Reuters, FT,
    TechCrunch, The Verge, Nature, Science, NPR, Janes) over aggregator blogs.
-2. Pick the 2-3 best interview candidates. Each must be a specific named person (not just a company),
+2. Pick the 2-3 best interview candidates. Hard rule: each one needs a news hook from the last 10 days that
+   names them or their work directly (a launch, paper, deal, ruling, statement), with its date and a source.
+   "The topic is in the news" or an old book is not a hook. If a topic has no such person, return fewer.
+   Each must be a specific named person (not just a company),
    tied to something that happened recently, and able to carry a serious long-form conversation.
 3. Learn from Craig's reactions above: more of what he liked, less of what he rejected.
 4. Do not search for videos or for past Eye on AI appearances: separate steps handle both.
@@ -334,7 +337,12 @@ def claude_research(mem, week):
 def structure_prompt(notes, week):
     return f"""Below are this week's research notes for the Eye on AI guest radar (week of {week}).
 Turn them into the structured format. Rules:
-- Keep only candidates that are specific named people with a sourced, recent reason. 6-8 guests, best first.
+- Keep only candidates that are specific named people with a dated news hook from the last 10 days that involves
+  them or their work directly; drop anyone whose hook is only "the topic is in the news". Up to 8 guests, best first.
+- Leave out anything the notes mark as unverified, unconfirmed or rumored. Never write "unverified" or hedges
+  about sources in any field: if a fact is not solid, omit it.
+- Never mention how the research was done anywhere (searches, sources, verification, targets, how many names
+  were found, who was left out). Craig must only read about the week and the guests.
   The notes come from separate topic searches: compare across all of them and spread picks over at least four topics.
 - why_now: 1-2 sentences, concrete (dates, numbers). angle: 1-2 sentences written for Craig.
 - previous_note: null unless they were on Eye on AI before; then e.g. "Return guest — on the show in 2023 (#150)".
@@ -436,8 +444,9 @@ def claude_find_videos(guests):
     todo = [g for g in guests if not g.get("video_url")]
     if not todo:
         return {}
-    people = "\n".join(f"- {g['name']} ({g['role']}, {g['org']})" for g in todo)
-    prompt = f"""For each person below, find ONE YouTube video where that exact person is speaking
+    people = "\n".join(f"- {g['name']} ({g['role']}, {g['org']}) - subject: {g['category']}, AI" for g in todo)
+    prompt = f"""For each person below, find ONE YouTube video where that exact person is speaking about the subject
+given next to their name (not about an unrelated topic)
 (a talk, interview, podcast or panel; recent if possible). Search YouTube for each name.
 Only use URLs you actually saw in search results; never construct or guess a video ID.
 
