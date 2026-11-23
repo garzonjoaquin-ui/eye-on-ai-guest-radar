@@ -70,7 +70,16 @@ Evidence from the channel: Ilya Sutskever (16k views) and neuroscientist Christo
 Ongoing interests: consciousness and the brain, chips and inference hardware, new model
 architectures (world models, open weights), AI in the Ukraine war and defense, AI for science,
 China's AI labs. Craig does the outreach himself, so suggestions must be people a serious
-journalist can plausibly reach and who would say yes to a respected niche podcast."""
+journalist can plausibly reach and who would say yes to a respected niche podcast.
+
+REACHABILITY (hard rule): Craig books guests himself for a respected niche podcast (a few thousand views per
+episode). Only suggest people who would realistically say yes. Never suggest CEOs or presidents of very large
+companies or top labs (Nvidia, OpenAI, Google/DeepMind, Microsoft, Meta, Apple, Amazon, Anthropic, Tesla/xAI and
+similar), heads of state or government, cabinet ministers of large countries, governors, or celebrities. Prefer
+academics, researchers, startup founders and CEOs, mid-size company executives, officials below cabinet level,
+journalists, authors and think-tank people, especially those who already do podcasts or talks. Exception: people
+who were already guests on Eye on AI. When the big news is about a giant (e.g. Nvidia), pick a reachable person
+tied to it instead: a researcher on the project, an analyst, a startup founder in the same space."""
 
 GUEST_SCHEMA = {
     "type": "object",
@@ -371,6 +380,8 @@ Turn them into the structured format. Rules:
   EARLIER PICKS section (if any): copy their role, org, category, video and sources from there, set
   previous_note to "Suggested before (week of <date>)", and refresh why_now if the notes have newer news on them.
   In the briefing script, mention earlier picks briefly as still worth a look.
+- Reachability: Craig books guests himself for a niche podcast. Drop any candidate he could not realistically get (CEOs of giant companies or top
+  labs, heads of state, ministers of large countries, governors, celebrities), unless they were on Eye on AI before.
 - Leave out anything the notes mark as unverified, unconfirmed or rumored. Never write "unverified" or hedges
   about sources in any field: if a fact is not solid, omit it.
 - Never mention how the research was done anywhere (searches, sources, verification, targets, how many names
